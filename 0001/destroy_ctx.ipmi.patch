@@ -1,0 +1,12 @@
+--- conman-0.2.5/server-ipmi.c	2009-02-13 07:11:56.000000000 +0100
++++ server-ipmi.c	2010-06-02 14:31:39.000000000 +0200
+@@ -514,6 +514,9 @@
+         log_msg(LOG_INFO,
+             "Unable to connect to <%s> via IPMI to console [%s]: %s",
+             ipmi->aux.ipmi.host, ipmi->name, ipmiconsole_ctx_strerror(e));
++
++        ipmiconsole_ctx_destroy(ipmi->aux.ipmi.ctx);
++        ipmi->aux.ipmi.ctx = NULL;
+     }
+ 
+     /*  Set timer for establishing new connection attempt.
