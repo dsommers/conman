@@ -1,0 +1,88 @@
+
+Breakpoint 1 at 0x805c188: file server-ipmi.c, line 330.
+Breakpoint 2 at 0x805c30e: file server-ipmi.c, line 370.
+Breakpoint 3 at 0x805c44e: file server-ipmi.c, line 417.
+Breakpoint 4 at 0x805c56d: file server-ipmi.c, line 458.
+Breakpoint 5 at 0x805c663: file server-ipmi.c, line 503.
+Breakpoint 6 at 0x805c7e8: file server-ipmi.c, line 544.
+Breakpoint 7 at 0x805c9af: file server-ipmi.c, line 582.
+Breakpoint 8 at 0x805c022: file server-ipmi.c, line 302.
+Breakpoint 9 at 0x805b786: file server-ipmi.c, line 71.
+Breakpoint 10 at 0x805bce1: file server-ipmi.c, line 253.
+Breakpoint 11 at 0x805bfaa: file server-ipmi.c, line 285.
+Breakpoint 12 at 0x805c088: file server-ipmi.c, line 308.
+Breakpoint 13 at 0x805c0ca: file server-ipmi.c, line 310.
+Breakpoint 14 at 0x805c1b2: file server-ipmi.c, line 333.
+Breakpoint 15 at 0x805c2cb: file server-ipmi.c, line 356.
+Breakpoint 16 at 0x805c315: file server-ipmi.c, line 372.
+Breakpoint 17 at 0x805c409: file server-ipmi.c, line 403.
+Breakpoint 18 at 0x805c9e4: file server-ipmi.c, line 584.
+Breakpoint 19 at 0x805ca34: file server-ipmi.c, line 592.
+Breakpoint 20 at 0x805cad6: file server-ipmi.c, line 607.
+Breakpoint 21 at 0x805cb53: file server-ipmi.c, line 617.
+(gdb) r -F
+Starting program: /home/matteo/travail/lab/conman/svn/issue-7/conmand -F
+[Thread debugging using libthread_db enabled]
+
+Breakpoint 10, create_ipmi_obj (conf=0x806e028, name=0x8070c60 "tata", iconf=0xbfffe9c4, host=0x8070d08 "toto", errbuf=0xbfffee90 "", errlen=1024) at server-ipmi.c:253
+253	    assert(conf != NULL);
+(gdb) c
+Continuing.
+
+Breakpoint 11, create_ipmi_obj (conf=0x806e028, name=0x8070c60 "tata", iconf=0xbfffe9c4, host=0x8070d08 "toto", errbuf=0xbfffee90 "", errlen=1024) at server-ipmi.c:285
+285	    x_pthread_mutex_init(&ipmi->aux.ipmi.mutex, NULL);
+(gdb) c
+Continuing.
+NOTICE:    Starting ConMan daemon 0.2.6 (pid 19112)
+
+Breakpoint 9, ipmi_init (num_consoles=1) at server-ipmi.c:71
+71	    if (num_consoles <= 0) {
+(gdb) c
+Continuing.
+[New Thread 0xb7a8eb70 (LWP 19116)]
+[New Thread 0xb728db70 (LWP 19117)]
+INFO:      IPMI SOL engine started with 1 thread for 1 console
+INFO:      Open file limit set to 4096
+
+Breakpoint 8, open_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:302
+302	    int rc = 0;
+(gdb) c
+Continuing.
+
+Breakpoint 12, open_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:308
+308	    x_pthread_mutex_lock(&ipmi->aux.ipmi.mutex);
+(gdb) c
+Continuing.
+
+Breakpoint 13, open_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:310
+310	    x_pthread_mutex_unlock(&ipmi->aux.ipmi.mutex);
+(gdb) c
+Continuing.
+
+Breakpoint 2, connect_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:370
+370	    int rc = 0;
+(gdb) c
+Continuing.
+
+Breakpoint 16, connect_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:372
+372	    x_pthread_mutex_lock(&ipmi->aux.ipmi.mutex);
+(gdb) c
+Continuing.
+
+Breakpoint 3, initiate_ipmi_connect (ipmi=0x8070de8) at server-ipmi.c:417
+417	    assert(ipmi->aux.ipmi.state == CONMAN_IPMI_DOWN);
+(gdb) c
+Continuing.
+
+Breakpoint 4, create_ipmi_ctx (ipmi=0x8070de8) at server-ipmi.c:458
+458	    ipmi_config.username = ipmi->aux.ipmi.iconf.username;
+(gdb) c
+Continuing.
+
+Breakpoint 2, connect_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:370
+370	    int rc = 0;
+(gdb) c
+Continuing.
+
+Breakpoint 16, connect_ipmi_obj (ipmi=0x8070de8) at server-ipmi.c:372
+372	    x_pthread_mutex_lock(&ipmi->aux.ipmi.mutex);
