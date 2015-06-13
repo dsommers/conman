@@ -1,0 +1,66 @@
+--- server-ipmi.c.orig	2011-03-08 15:31:47.000000000 +0100
++++ server-ipmi.c	2011-03-08 16:58:25.000000000 +0100
+@@ -374,7 +374,7 @@
+     }
+     else {
+         log_err(0, "Console [%s] is in unexpected ipmi state=%d",
+-            ipmi->aux.ipmi.state);
++            ipmi->name, ipmi->aux.ipmi.state);
+     }
+ 
+     if (rc < 0) {
+@@ -399,12 +399,16 @@
+     DPRINTF((10, "Connecting to <%s> via IPMI for [%s].\n",
+         ipmi->aux.ipmi.host, ipmi->name));
+ 
++    /* Update de state before submitting to the engine
++     * preventing unecessary loops between the callback
++     * and this function
++     */
++    ipmi->aux.ipmi.state = CONMAN_IPMI_PENDING;
+     rc = ipmiconsole_engine_submit(ipmi->aux.ipmi.ctx,
+         (Ipmiconsole_callback) connect_ipmi_obj, ipmi);
+     if (rc < 0) {
+         return(-1);
+     }
+-    ipmi->aux.ipmi.state = CONMAN_IPMI_PENDING;
+     /*
+      *  ipmiconsole_engine_submit() should always call its callback function,
+      *    at which point the connection will be established or retried.
+@@ -448,7 +452,14 @@
+     engine_config.behavior_flags = 0;
+     engine_config.debug_flags = 0;
+ 
+-    assert(ipmi->aux.ipmi.ctx == NULL);
++    /* If we are here, and the context exists, destroy it
++     * before continuing. It will be recreated anew just the
++     * next instruction...
++     */
++    if (ipmi->aux.ipmi.ctx != NULL) {
++        ipmiconsole_ctx_destroy(ipmi->aux.ipmi.ctx);
++        ipmi->aux.ipmi.ctx = NULL;
++    }
+ 
+     ipmi->aux.ipmi.ctx = ipmiconsole_ctx_create(
+         ipmi->aux.ipmi.host, &ipmi_config, &protocol_config, &engine_config);
+@@ -503,6 +514,10 @@
+ /*  Logs an error message for the connection failure and sets a timer to
+  *    establish a new connection attempt.
+  */
++    if((ipmi->aux.ipmi.timer != -1) && (ipmi->aux.ipmi.state == CONMAN_IPMI_DOWN)) {
++        return;
++    }
++
+     ipmi->aux.ipmi.state = CONMAN_IPMI_DOWN;
+ 
+     if (!ipmi->aux.ipmi.ctx) {
+@@ -514,9 +529,6 @@
+         log_msg(LOG_INFO,
+             "Unable to connect to <%s> via IPMI to console [%s]: %s",
+             ipmi->aux.ipmi.host, ipmi->name, ipmiconsole_ctx_strerror(e));
+-
+-        ipmiconsole_ctx_destroy(ipmi->aux.ipmi.ctx);
+-        ipmi->aux.ipmi.ctx = NULL;
+     }
+ 
+     /*  Set timer for establishing new connection attempt.
