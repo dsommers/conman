@@ -1,0 +1,72 @@
+--- conman-0.2.5/server.h	2009-05-15 03:24:18.000000000 +0200
++++ server.h	2010-06-14 15:36:53.000000000 +0200
+@@ -173,6 +173,7 @@
+     char             password[ IPMI_MAX_PSWD_LEN + 1 ]; /*  BMC password     */
+     unsigned char    kg[ IPMI_MAX_KG_LEN + 1 ];         /*  BMC K_g key      */
+     unsigned int     kgLen;                             /*  BMC K_g key len  */
++    unsigned int     workaround_flags;      /*  ipmiconsole workaround flags */
+ } ipmiopt_t;
+ 
+ typedef struct ipmiconsole_ctx ipmictx_t;
+--- conman-0.2.5/server-ipmi.c	2009-02-13 07:11:56.000000000 +0100
++++ server-ipmi.c	2010-06-14 15:36:49.000000000 +0200
+@@ -179,6 +179,33 @@
+         }
+         ioptsTmp.kgLen = n;
+     }
++    while ((tok = strtok(NULL, separators))) {
++        if (!strcasecmp (tok, "authcap"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_AUTHENTICATION_CAPABILITIES;
++        else if (!strcasecmp (tok, "intel20"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_INTEL_2_0_SESSION;
++        else if (!strcasecmp (tok, "supermicro20"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_SUPERMICRO_2_0_SESSION;
++        else if (!strcasecmp (tok, "sun20"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_SUN_2_0_SESSION;
++        else if (!strcasecmp (tok, "opensesspriv"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_OPEN_SESSION_PRIVILEGE;
++        else if (!strcasecmp (tok, "solpayloadsize"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_IGNORE_SOL_PAYLOAD_SIZE;
++        else if (!strcasecmp (tok, "solport"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_IGNORE_SOL_PORT;
++        else if (!strcasecmp (tok, "solstatus"))
++            ioptsTmp.workaround_flags |= IPMICONSOLE_WORKAROUND_SKIP_SOL_ACTIVATION_STATUS;
++        else {
++            if ((errbuf != NULL) && (errlen > 0)) {
++                snprintf(errbuf, errlen,
++                    "unrecognized ipmiopt workaround flags '%s'",
++                    tok);
++            }
++            return(-1);
++        }
++    }
++
+     *iopts = ioptsTmp;
+     return(0);
+ }
+@@ -230,9 +257,13 @@
+         }
+     }
+     else {
+-        n = strlcpy(dst, src, dstlen);
+-        if (n >= dstlen) {
+-            return(-1);
++        if (((src[0] == '-') && (src[1] == 0)))
++            n = 0;
++        else {
++            n = strlcpy(dst, src, dstlen);
++            if (n >= dstlen) {
++                return(-1);
++            }
+         }
+     }
+     assert(n < dstlen);
+@@ -434,7 +465,7 @@
+     ipmi_config.k_g_len = ipmi->aux.ipmi.iconf.kgLen;
+     ipmi_config.privilege_level = -1;
+     ipmi_config.cipher_suite_id = -1;
+-    ipmi_config.workaround_flags = 0;
++    ipmi_config.workaround_flags = ipmi->aux.ipmi.iconf.workaround_flags;
+ 
+     protocol_config.session_timeout_len = -1;
+     protocol_config.retransmission_timeout_len = -1;
