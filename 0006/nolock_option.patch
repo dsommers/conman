@@ -1,0 +1,97 @@
+--- conman-0.2.6/etc/conman.conf	2010-05-21 03:17:00.000000000 +0200
++++ etc/conman.conf	2010-09-15 16:37:23.000000000 +0200
+@@ -154,15 +154,16 @@
+ #    of the console's logfile also affect the output of the console's
+ #    log-replay escape.
+ #  The valid logopts include the following:
++#    - "lock" or "nolock" - locked logs are protected with a write lock.
+ #    - "sanitize" or "nosanitize" - sanitized logs convert non-printable
+ #      characters into 7-bit printable characters.
+ #    - "timestamp" or "notimestamp" - timestamped logs prepend each line
+ #      of console output with a timestamp in "YYYY-MM-DD HH:MM:SS" format.
+ #      This timestamp is generated when the first character following the
+ #      line break is output.
+-#  The default is "nosanitize,notimestamp".
++#  The default is "lock,nosanitize,notimestamp".
+ ##
+-# global logopts="nosanitize,notimestamp"
++# global logopts="lock,nosanitize,notimestamp"
+ ##
+ 
+ ##
+--- conman-0.2.6/man/conman.conf.5.in	2010-06-09 03:26:11.000000000 +0200
++++ man/conman.conf.5.in	2010-09-15 16:40:23.000000000 +0200
+@@ -107,7 +107,7 @@
+ defined) or the current working directory.  Intermediate directories
+ will be created as needed.
+ .TP
+-\fBlogopts\fR \fB=\fR "(\fBsanitize\fR|\fBnosanitize\fR),(\fBtimestamp\fR|\fBnotimestamp\fR)"
++\fBlogopts\fR \fB=\fR "(\fBlock\fR|\fBnolock\fR),(\fBsanitize\fR|\fBnosanitize\fR),(\fBtimestamp\fR|\fBnotimestamp\fR)"
+ Specifies global options for the console log files.  These options can be
+ overridden on a per-console basis by specifying the \fBCONSOLE\fR \fBlogopts\fR
+ keyword.  Note that options affecting the output of the console's logfile also
+@@ -115,7 +115,10 @@
+ include the following:
+ .br
+ .sp
+-\fBsanitize\fR or \fBnosanitize\fR - sanitized log files convert non-printable
++\fBlock\fR or \fBnolock\fR - locked log files are protected with a write lock.
++.br
++.sp
++\fBsanitize\fR or \fBnosanitize\fR - sanitized logs convert non-printable
+ characters into 7-bit printable characters.
+ .br
+ .sp
+--- conman-0.2.6/server-conf.c	2010-06-09 03:26:11.000000000 +0200
++++ server-conf.c	2010-09-15 17:18:56.000000000 +0200
+@@ -257,6 +257,7 @@
+     conf->globalLogName = NULL;
+     conf->globalLogOpts.enableSanitize = DEFAULT_LOGOPT_SANITIZE;
+     conf->globalLogOpts.enableTimestamp = DEFAULT_LOGOPT_TIMESTAMP;
++    conf->globalLogOpts.enableLock = DEFAULT_LOGOPT_LOCK;
+     conf->globalSerOpts.bps = DEFAULT_SEROPT_BPS;
+     conf->globalSerOpts.databits = DEFAULT_SEROPT_DATABITS;
+     conf->globalSerOpts.parity = DEFAULT_SEROPT_PARITY;
+--- conman-0.2.6/server.h	2010-06-15 22:41:37.000000000 +0200
++++ server.h	2010-09-15 17:18:27.000000000 +0200
+@@ -41,6 +41,7 @@
+ #include "tpoll.h"
+ 
+ 
++#define DEFAULT_LOGOPT_LOCK             1
+ #define DEFAULT_LOGOPT_SANITIZE         0
+ #define DEFAULT_LOGOPT_TIMESTAMP        0
+ 
+@@ -91,6 +92,7 @@
+ } client_obj_t;
+ 
+ typedef struct logfile_opt {            /* LOGFILE OBJ OPTIONS:              */
++    unsigned         enableLock:1;      /*  true if logfile being locked     */
+     unsigned         enableSanitize:1;  /*  true if logfile being sanitized  */
+     unsigned         enableTimestamp:1; /*  true if timestamping each line   */
+ } logopt_t;
+--- conman-0.2.6/server-logfile.c	2010-06-09 03:26:11.000000000 +0200
++++ server-logfile.c	2010-09-15 17:18:04.000000000 +0200
+@@ -80,7 +80,11 @@
+      */
+     tok = strtok(buf, separators);
+     while (tok != NULL) {
+-        if (!strcasecmp(tok, "sanitize"))
++        if (!strcasecmp(tok, "lock"))
++            optsTmp.enableLock = 1;
++        else if (!strcasecmp(tok, "nolock"))
++            optsTmp.enableLock = 0;
++	else if (!strcasecmp(tok, "sanitize"))
+             optsTmp.enableSanitize = 1;
+         else if (!strcasecmp(tok, "nosanitize"))
+             optsTmp.enableSanitize = 0;
+@@ -269,7 +273,8 @@
+             logfile->name, strerror(errno));
+         return(-1);
+     }
+-    if (get_write_lock(logfile->fd) < 0) {
++    if (logfile->aux.logfile.opts.enableLock
++            && (get_write_lock(logfile->fd) < 0)) {
+         log_msg(LOG_WARNING, "Unable to lock \"%s\"", logfile->name);
+         close(logfile->fd);             /* ignore err on close() */
+         logfile->fd = -1;
