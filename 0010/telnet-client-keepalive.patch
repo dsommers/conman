@@ -1,0 +1,15 @@
+diff --git a/telnet/commands.c b/telnet/commands.c
+index 289e6be..1c553a5 100644
+--- a/telnet/commands.c
++++ b/telnet/commands.c
+@@ -2538,6 +2538,10 @@ tn(int argc, char *argv[])
+ 	}
+ #endif	/* defined(IPPROTO_IP) && defined(IP_TOS) */
+ 
++	if (SetSockOpt(net, SOL_SOCKET, SO_KEEPALIVE, 1) < 0) {
++		perror("setsockopt (SO_KEEPALIVE)");
++	}
++
+ 	if (debug && SetSockOpt(net, SOL_SOCKET, SO_DEBUG, 1) < 0) {
+ 		perror("setsockopt (SO_DEBUG)");
+ 	}
